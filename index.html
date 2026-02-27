@@ -3,94 +3,132 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Momo AI 🌸</title>
+    <title>Momo AI - Avatar 🌸</title>
+    <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
     <style>
-        :root { --primary: #ff85a2; --bg: #1a1a2e; }
+        :root { --primary: #ff85a2; --bg: #fdf2f8; --text: #4a4a4a; }
         body { 
-            margin: 0; background: var(--bg); color: white;
-            font-family: 'Poppins', sans-serif; display: flex;
+            margin: 0; background: var(--bg); color: var(--text);
+            font-family: 'Segoe UI', Roboto, sans-serif; display: flex;
             flex-direction: column; align-items: center; justify-content: center;
-            height: 100vh; overflow: hidden;
+            height: 100vh;
         }
-        /* Glassmorphism Card */
-        .momo-card {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(15px);
-            border-radius: 30px; padding: 40px;
-            text-align: center; width: 85%; max-width: 400px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-            border: 1px solid rgba(255,255,255,0.1);
+        /* App Container */
+        .momo-app {
+            background: white; border-radius: 40px;
+            padding: 30px; text-align: center;
+            width: 85%; max-width: 380px;
+            box-shadow: 0 15px 35px rgba(255,133,162,0.15);
+            border: 2px solid rgba(255,133,162,0.1);
         }
-        /* Animated Core */
-        .momo-core {
-            width: 120px; height: 120px;
-            background: linear-gradient(45deg, #ff85a2, #ffb7c5);
-            border-radius: 50%; margin: 0 auto 30px;
-            box-shadow: 0 0 50px var(--primary);
-            animation: pulse 2s infinite ease-in-out;
+        /* Avatar Area */
+        .avatar-container {
+            width: 150px; height: 150px; margin: 0 auto 20px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 50px;
         }
-        @keyframes pulse {
-            0% { transform: scale(1); box-shadow: 0 0 20px var(--primary); }
-            50% { transform: scale(1.1); box-shadow: 0 0 60px var(--primary); }
-            100% { transform: scale(1); box-shadow: 0 0 20px var(--primary); }
+        .status-badge {
+            background: rgba(255,133,162,0.1); color: var(--primary);
+            padding: 8px 15px; border-radius: 20px; font-size: 14px;
+            display: inline-block; margin-bottom: 25px; font-weight: 600;
         }
-        .status-text { color: var(--primary); margin: 20px 0; font-weight: 300; }
-        .btn-talk {
-            background: var(--primary); border: none; padding: 15px 40px;
-            border-radius: 50px; color: white; font-size: 18px;
-            cursor: pointer; transition: 0.3s; font-weight: 600;
+        /* Modern Button */
+        .btn-momo {
+            background: var(--primary); border: none; padding: 18px;
+            width: 70px; height: 70px; border-radius: 50%;
+            color: white; font-size: 24px; cursor: pointer;
+            box-shadow: 0 8px 20px rgba(255,133,162,0.4);
+            transition: all 0.3s ease;
         }
-        .btn-talk:active { transform: scale(0.9); }
-        #memory-log { font-size: 12px; color: #888; margin-top: 15px; }
+        .btn-momo:active { transform: scale(0.9) translateY(3px); box-shadow: 0 4px 10px rgba(255,133,162,0.3); }
+        
+        #user-speech { margin-top: 20px; font-size: 14px; color: #888; font-style: italic; min-height: 1em;}
     </style>
 </head>
 <body>
 
-    <div class="momo-card">
-        <div class="momo-core">🌸</div>
-        <h1 style="margin:0;">Momo</h1>
-        <p class="status-text" id="status">Ready to listen...</p>
+    <div class="momo-app">
+        <div class="avatar-container">
+            <lottie-player id="momo-visual" 
+                src="https://assets10.lottiefiles.com/packages/lf20_myejio3g.json"  
+                background="transparent"  speed="1"  
+                style="width: 100%; height: 100%;"  loop  autoplay>
+            </lottie-player>
+        </div>
+
+        <h1 style="margin: 0 0 10px; color: var(--primary);">Momo</h1>
+        <div class="status-badge" id="momo-status">Hi! I'm Momo 🌸</div>
         
-        <button class="btn-talk" onclick="momoListen()">Tap to Speak</button>
-        
-        <div id="memory-log">Memory Sync: Active ✅</div>
+        <div id="user-speech"></div>
+        <br>
+
+        <button class="btn-momo" onclick="startMomoInteraction()">🎤</button>
     </div>
 
     <script>
         const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
         const synth = window.speechSynthesis;
+        const momoVisual = document.getElementById('momo-visual');
+        const statusBadge = document.getElementById('momo-status');
+        const userSpeechDisplay = document.getElementById('user-speech');
 
-        function momoListen() {
-            recognition.start();
-            document.getElementById('status').innerText = "Momo is listening...";
+        // Animation States (URLs for different emotions)
+        const STATE_IDLE = "https://assets10.lottiefiles.com/packages/lf20_myejio3g.json";
+        const STATE_LISTENING = "https://assets9.lottiefiles.com/packages/lf20_bX8m8H.json"; // Listening/Wave
+        const STATE_SPEAKING = "https://assets10.lottiefiles.com/packages/lf20_w51pcehl.json"; // Speaking/Mouth move
+
+        function setMomoState(stateUrl, statusText) {
+            momoVisual.load(stateUrl);
+            statusBadge.innerText = statusText;
         }
 
-        recognition.onresult = (event) => {
-            const speechToText = event.results[0][0].transcript;
-            document.getElementById('status').innerText = "Analyzing...";
-            processMomoTalk(speechToText);
+        function startMomoInteraction() {
+            recognition.start();
+        }
+
+        recognition.onstart = () => {
+            userSpeechDisplay.innerText = "";
+            setMomoState(STATE_LISTENING, "Listening...");
         };
 
-        async function processMomoTalk(input) {
-            // Memory Logic: Yahan hum Local Storage use kar rahe hain
-            let history = JSON.parse(localStorage.getItem('momo_memory')) || [];
+        recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            userSpeechDisplay.innerText = `"${transcript}"`;
+            processCommand(transcript);
+        };
+
+        recognition.onerror = () => {
+            setMomoState(STATE_IDLE, "Oops! Try again.");
+        };
+
+        async function processCommand(input) {
+            setMomoState(STATE_SPEAKING, "Momo is replying...");
             
-            // Momo ka reply logic
-            let reply = `Maine suna aapne kaha: ${input}. Main isse apni memory file mein save kar rahi hoon! ✨`;
-            
-            // Voice Output (Cute Pitch)
+            // 🌸 "Cute" Reply Logic
+            let reply = "";
+            if(input.toLowerCase().includes('hello')) {
+                reply = "Hello there! I'm Momo, your cute AI companion! How can I help you today? ✨";
+            } else if(input.toLowerCase().includes('name')) {
+                reply = "My name is Momo! 🌸 Do you like it?";
+            } else {
+                reply = `Maine suna aapne kaha: ${input}. Main abhi seekh rahi hoon!`;
+            }
+
+            // Voice Output setup
             const utter = new SpeechSynthesisUtterance(reply);
-            utter.pitch = 1.6; // Higher pitch for "cute" effect
+            utter.pitch = 1.6; // High pitch for cute effect
             utter.rate = 1.0;
+
+            // Jab bolna khatam ho jaye
+            utter.onend = () => {
+                setMomoState(STATE_IDLE, "Ready for more!");
+            };
+
             synth.speak(utter);
 
-            // Update Memory History
-            history.push({ user: input, bot: reply, time: new Date() });
-            localStorage.setItem('momo_memory', JSON.stringify(history));
-            
-            document.getElementById('status').innerText = "Momo: " + input;
+            // Memory: Local Storage (Laptop permanent memory is Phase 3)
+            let history = JSON.parse(localStorage.getItem('momo_brain')) || [];
+            history.push({u: input, m: reply, t: new Date()});
+            localStorage.setItem('momo_brain', JSON.stringify(history));
         }
     </script>
 </body>
