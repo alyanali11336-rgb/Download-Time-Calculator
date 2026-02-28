@@ -3,111 +3,89 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ultimate Network & GB Calculator</title>
+    <title>Pro GB Calculator (Live Test)</title>
     <style>
-        :root { --primary: #6366f1; --success: #22c55e; --bg: #f8fafc; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); display: flex; justify-content: center; padding: 20px; }
-        .container { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); width: 100%; max-width: 450px; }
-        .network-card { background: #f1f5f9; padding: 15px; border-radius: 12px; margin-bottom: 20px; font-size: 13px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .stat { color: #475569; }
-        .stat b { color: var(--primary); }
-        .mode-switch { margin-bottom: 20px; display: flex; gap: 10px; }
-        .mode-btn { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px; cursor: pointer; background: white; font-weight: bold; }
-        .mode-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
-        input { width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 10px; box-sizing: border-box; font-size: 16px; margin-top: 8px; }
-        .result-area { margin-top: 20px; padding: 20px; background: #ecfdf5; border-radius: 12px; text-align: center; }
-        #time-result { font-size: 28px; font-weight: 800; color: var(--success); display: block; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding: 20px; }
+        .card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); width: 400px; text-align: center; }
+        .speed-box { background: #e8f0fe; padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #4285f4; }
+        #live-speed { font-size: 24px; font-weight: bold; color: #1a73e8; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 2px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        .btn-test { background: #1a73e8; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-bottom: 10px; width: 100%; }
+        .btn-test:disabled { background: #ccc; }
+        #time-result { font-size: 26px; font-weight: bold; color: #34a853; margin-top: 15px; display: block; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2 style="margin-top:0">🌐 Pro Net Calculator</h2>
-
-    <div class="network-card">
-        <div class="stat">Type: <b id="net-type">-</b></div>
-        <div class="stat">Ping (RTT): <b id="net-ping">-</b> ms</div>
-        <div class="stat">Downlink: <b id="net-down">-</b> Mbps</div>
-        <div class="stat">Data Saver: <b id="net-save">-</b></div>
+<div class="card">
+    <h2>🚀 Live GB Calculator</h2>
+    
+    <div class="speed-box">
+        <button class="btn-test" id="test-btn" onclick="runSpeedTest()">Test My Actual Speed</button>
+        <div>Current Speed: <span id="live-speed">0.00</span> Mbps</div>
     </div>
 
-    <div class="mode-switch">
-        <button class="mode-btn active" onclick="setMode('download', this)">Download</button>
-        <button class="mode-btn" onclick="setMode('upload', this)">Upload</button>
+    <div style="text-align: left;">
+        <label>File Size (GB):</label>
+        <input type="number" id="fileSize" placeholder="Enter GB" oninput="calculate()">
     </div>
 
-    <div style="margin-bottom: 15px;">
-        <label id="input-label">File Size (GB):</label>
-        <input type="number" id="fileSize" placeholder="Enter size in GB" oninput="calculateAll()">
-    </div>
-
-    <div style="margin-bottom: 15px;" id="manual-speed-div">
-        <label>Speed (Mbps):</label>
-        <input type="number" id="customSpeed" placeholder="Auto-detecting..." oninput="calculateAll()">
-        <small style="color: #94a3b8;">* Leave blank to use auto-detected speed</small>
-    </div>
-
-    <div class="result-area">
-        <span style="font-size: 14px; color: #64748b;" id="result-label">Estimated Download Time</span>
+    <div id="result-box" style="margin-top: 20px; padding: 15px; background: #f9f9f9; border-radius: 10px;">
+        <small>Estimated Time:</small>
         <span id="time-result">0d 0h 0m 0s</span>
     </div>
 </div>
 
 <script>
-    let currentMode = 'download';
+    let measuredSpeed = 0;
 
-    function setMode(mode, btn) {
-        currentMode = mode;
-        // Button UI toggle
-        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
+    async function runSpeedTest() {
+        const btn = document.getElementById('test-btn');
+        const speedDisplay = document.getElementById('live-speed');
+        btn.disabled = true;
+        btn.innerText = "Testing... Please wait";
+
+        // Hum ek heavy image download karke speed check karenge
+        const imageAddr = "https://upload.wikimedia.org/wikipedia/commons/3/3a/Rosa_Precious_platinum.jpg" + "?n=" + Math.random();
+        const downloadSize = 3000000; // Takreeban 3MB ki file
+
+        let startTime = new Date().getTime();
         
-        // Label updates
-        document.getElementById('result-label').innerText = `Estimated ${mode.charAt(0).toUpperCase() + mode.slice(1)} Time`;
-        calculateAll();
-    }
-
-    function updateNetworkStats() {
-        if (navigator.connection) {
-            const conn = navigator.connection;
-            document.getElementById('net-type').innerText = conn.effectiveType.toUpperCase();
-            document.getElementById('net-ping').innerText = conn.rtt;
-            document.getElementById('net-down').innerText = conn.downlink;
-            document.getElementById('net-save').innerText = conn.saveData ? "ON" : "OFF";
+        try {
+            await fetch(imageAddr);
+            let endTime = new Date().getTime();
+            let duration = (endTime - startTime) / 1000; // seconds mein
+            let bitsLoaded = downloadSize * 8;
+            let speedBps = bitsLoaded / duration;
+            let speedMbps = (speedBps / (1024 * 1024)).toFixed(2);
             
-            // Auto-fill speed if manual is empty
-            if (!document.getElementById('customSpeed').value) {
-                calculateAll();
-            }
+            measuredSpeed = parseFloat(speedMbps);
+            speedDisplay.innerText = measuredSpeed;
+            calculate();
+        } catch (e) {
+            alert("Speed test failed. Check internet connection.");
         }
+
+        btn.disabled = false;
+        btn.innerText = "Test My Actual Speed";
     }
 
-    function calculateAll() {
-        let size = document.getElementById('fileSize').value;
-        let manualSpeed = document.getElementById('customSpeed').value;
-        let autoSpeed = navigator.connection ? navigator.connection.downlink : 0;
-        
-        let speed = (manualSpeed > 0) ? manualSpeed : autoSpeed;
+    function calculate() {
+        let sizeGB = document.getElementById('fileSize').value;
         let display = document.getElementById('time-result');
 
-        if (size > 0 && speed > 0) {
-            let totalMegabits = size * 1024 * 8;
-            let seconds = totalMegabits / speed;
+        if (sizeGB > 0 && measuredSpeed > 0) {
+            let totalMegabits = sizeGB * 1024 * 8;
+            let totalSeconds = totalMegabits / measuredSpeed;
 
-            let d = Math.floor(seconds / 86400);
-            let h = Math.floor((seconds % 86400) / 3600);
-            let m = Math.floor((seconds % 3600) / 60);
-            let s = Math.round(seconds % 60);
+            let d = Math.floor(totalSeconds / 86400);
+            let h = Math.floor((totalSeconds % 86400) / 3600);
+            let m = Math.floor((totalSeconds % 3600) / 60);
+            let s = Math.round(totalSeconds % 60);
 
             display.innerText = `${d}d ${h}h ${m}m ${s}s`;
-        } else {
-            display.innerText = "0d 0h 0m 0s";
         }
     }
-
-    // Har 2 seconds baad network info update hogi
-    setInterval(updateNetworkStats, 2000);
-    window.onload = updateNetworkStats;
 </script>
 
 </body>
