@@ -5,87 +5,77 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Real-Time Auto GB Calculator</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #eef2f3; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        body { font-family: 'Segoe UI', sans-serif; background: #eef2f3; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
         .card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 400px; text-align: center; }
-        h2 { color: #333; margin-bottom: 20px; }
-        .input-group { text-align: left; margin-bottom: 15px; }
-        input { width: 100%; padding: 12px; margin-top: 5px; border: 2px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; transition: 0.3s; }
-        input:focus { border-color: #007bff; outline: none; }
-        .speed-badge { background: #007bff; color: white; padding: 5px 10px; border-radius: 20px; font-size: 12px; display: inline-block; margin-bottom: 10px; }
+        .speed-badge { background: #007bff; color: white; padding: 8px 15px; border-radius: 20px; font-size: 14px; display: inline-block; margin-bottom: 20px; font-weight: bold; }
+        input { width: 100%; padding: 12px; margin-top: 5px; border: 2px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
         #result-box { margin-top: 25px; padding: 15px; background: #f8f9fa; border-left: 5px solid #28a745; border-radius: 5px; }
         #time-display { font-size: 24px; font-weight: bold; color: #28a745; display: block; }
+        .live-dot { height: 10px; width: 10px; background-color: #ff0000; border-radius: 50%; display: inline-block; margin-right: 5px; animation: blink 1s infinite; }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
     </style>
 </head>
 <body>
 
 <div class="card">
     <h2>🚀 GB Calculator</h2>
-    <div class="speed-badge" id="auto-speed-text">Detecting Speed...</div>
-    
-    <div class="input-group">
-        <label>File Size (GB):</label>
-        <input type="number" id="fileSize" placeholder="Enter GB (e.g. 50)" oninput="calculateRealTime()">
+    <div class="speed-badge" id="speed-tag">
+        <span class="live-dot"></span> Checking Speed...
     </div>
-
-    <div class="input-group">
-        <label>Manual Speed (Mbps) - Optional:</label>
-        <input type="number" id="manualSpeed" placeholder="Auto-detected if left blank" oninput="calculateRealTime()">
+    
+    <div style="text-align: left; margin-bottom: 15px;">
+        <label>File Size (GB):</label>
+        <input type="number" id="fileSize" placeholder="E.g. 50" oninput="calculate()">
     </div>
 
     <div id="result-box">
-        <span style="color: #666; font-size: 14px;">Estimated Download Time:</span>
-        <span id="time-display">0h 0m 0s</span>
+        <span style="color: #666; font-size: 14px;">Estimated Time:</span>
+        <span id="time-display">0d 0h 0m 0s</span>
     </div>
 </div>
 
 <script>
-    let currentSpeed = 0;
+    let liveSpeed = 0;
 
-    // 1. Internet Speed Detect Karna
-    function updateNetworkSpeed() {
+    // 1. Har 1 second baad speed detect karne ka function
+    function autoDetectSpeed() {
         if (navigator.connection && navigator.connection.downlink) {
-            // navigator.connection.downlink Megabits per second (Mbps) mein value deta hai
-            currentSpeed = navigator.connection.downlink;
-            document.getElementById('auto-speed-text').innerText = `Auto-Detected Speed: ${currentSpeed} Mbps`;
-            calculateRealTime();
-        } else {
-            document.getElementById('auto-speed-text').innerText = "Speed detection not supported. Enter manually.";
+            liveSpeed = navigator.connection.downlink; // Mbps mein speed
+            document.getElementById('speed-tag').innerHTML = `<span class="live-dot"></span> Live Speed: ${liveSpeed} Mbps`;
+            calculate(); // Speed change hote hi calculation update karein
         }
     }
 
-    // 2. Real-Time Calculation
-    function calculateRealTime() {
+    // 2. Calculation Logic
+    function calculate() {
         let sizeGB = document.getElementById('fileSize').value;
-        let manualSpeed = document.getElementById('manualSpeed').value;
-        let timeDisplay = document.getElementById('time-display');
+        let display = document.getElementById('time-display');
 
-        // Agar user ne manual speed dali hai to woh use karein, warna auto-detected
-        let speedToUse = (manualSpeed > 0) ? manualSpeed : currentSpeed;
+        if (sizeGB > 0 && liveSpeed > 0) {
+            // Logic: GB to Megabits (GB * 1024 * 8)
+            let totalMegabits = sizeGB * 1024 * 8;
+            let totalSeconds = totalMegabits / liveSpeed;
 
-        if (sizeGB > 0 && speedToUse > 0) {
-            // Conversion: GB to Bits
-            let totalBits = sizeGB * 1024 * 8 * 1024; // MB to bits
-            let speedInBits = speedToUse * 1024 * 1024; // Mbps to bits
-            
-            let totalSeconds = totalBits / speedInBits;
-            
-            let hours = Math.floor(totalSeconds / 3600);
+            let days = Math.floor(totalSeconds / 86400);
+            let hours = Math.floor((totalSeconds % 86400) / 3600);
             let minutes = Math.floor((totalSeconds % 3600) / 60);
             let seconds = Math.round(totalSeconds % 60);
 
-            timeDisplay.innerText = `${hours}h ${minutes}m ${seconds}s`;
+            let timeStr = "";
+            if (days > 0) timeStr += `${days}d `;
+            timeStr += `${hours}h ${minutes}m ${seconds}s`;
+            
+            display.innerText = timeStr;
         } else {
-            timeDisplay.innerText = "0h 0m 0s";
+            display.innerText = "0d 0h 0m 0s";
         }
     }
 
-    // Network status change hone par auto update
-    if (navigator.connection) {
-        navigator.connection.addEventListener('change', updateNetworkSpeed);
-    }
+    // Interval set kiya hai jo har 1000ms (1 second) baad chalega
+    setInterval(autoDetectSpeed, 1000);
 
-    // Page load hote hi speed check karein
-    window.onload = updateNetworkSpeed;
+    // Initial call
+    window.onload = autoDetectSpeed;
 </script>
 
 </body>
